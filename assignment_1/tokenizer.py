@@ -14,50 +14,59 @@ sample_texts = {
 
 gpt_models = ["gpt-4o", "gpt-4", "gpt-3.5"]
 
+# Adapter interface
+class TokenizerAdapter:
+    def count_tokens(self, text):
+        raise NotImplementedError
 
-def get_gpt_encoder(model: str):
-    return tiktoken.encoding_for_model(model)
+# GPT Tokenizer Adapter
+class GPTTokenizerAdapter(TokenizerAdapter):
+    def __init__(self, model_name):
+        self.tokenizer = tiktoken.encoding_for_model(model_name)
 
+    def count_tokens(self, text):
+        return len(self.tokenizer.encode(text))
 
-def count_gpt_tokens(model, text):
-    # encoding = tiktoken.get_encoding("o200k_base")
-    encoding = get_gpt_encoder(model)
-    tokens = encoding.encode(text)
-    return len(tokens)
-
-
-def count_mistral_tokens(text):
-    # tokenizer = MistralTokenizer.v3(is_tekken=True)
-    model_name = "open-mixtral-8x22b"
-    tokenizer = MistralTokenizer.from_model(model_name, strict=True)
-    tokenized = tokenizer.encode_chat_completion(
-        ChatCompletionRequest(
-            messages=[
-                UserMessage(content=text),
-            ],
-            model=model_name,
+# Mistral Tokenizer Adapter
+class MistralTokenizerAdapter(TokenizerAdapter):
+    def count_tokens(self, text):
+        model_name = "open-mixtral-8x22b"
+        tokenizer = MistralTokenizer.from_model(model_name, strict=True)
+        tokenized = tokenizer.encode_chat_completion(
+            ChatCompletionRequest(
+                messages=[
+                    UserMessage(content=text),
+                ],
+                model=model_name,
+            )
         )
-    )
-    return len(tokenized.tokens)
+        return len(tokenized.tokens)
 
+# Llama Tokenizer Adapter
+class LlamaTokenizerAdapter(TokenizerAdapter):
+    def __init__(self):
+        self.tokenizer = LlamaTokenizerFast.from_pretrained(
+            "hf-internal-testing/llama-tokenizer",
+        )
 
-def count_llama_tokens(text):
-    tokenizer = LlamaTokenizerFast.from_pretrained(
-        "hf-internal-testing/llama-tokenizer",
-    )
-    return len(tokenizer.encode(text))
-
+    def count_tokens(self, text):
+        return len(self.tokenizer.encode(text))
 
 if __name__ == "__main__":
     result = []
     for lang, text in sample_texts.items():
         for model in gpt_models:
-            gpt_tokens = count_gpt_tokens(model,text)
+            gpt_adapter = GPTTokenizerAdapter(model)
+            gpt_tokens = gpt_adapter.count_tokens(text)
             result.append({"lang": lang, "model": model, "tokens": gpt_tokens})
-        mistral_tokens = count_mistral_tokens(text)
+        
+        mistral_adapter = MistralTokenizerAdapter()
+        mistral_tokens = mistral_adapter.count_tokens(text)
         result.append({"lang": lang, "model": "mistral", "tokens": mistral_tokens})
-        llama_tokens = count_llama_tokens(text)
+        
+        llama_adapter = LlamaTokenizerAdapter()
+        llama_tokens = llama_adapter.count_tokens(text)
         result.append({"lang": lang, "model": "llama", "tokens": llama_tokens})
 
-df = pd.DataFrame(result)
-print(df)
+    df = pd.DataFrame(result)
+    print(df)
