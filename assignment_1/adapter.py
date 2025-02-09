@@ -6,9 +6,8 @@ from mistral_common.protocol.instruct.request import ChatCompletionRequest
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from transformers import LlamaTokenizerFast
 
+
 # Adapter interface
-
-
 class TokenizerAdapter(ABC):
     @abstractmethod
     def count_tokens(self, text):
@@ -28,7 +27,9 @@ class GPTTokenizerAdapter(TokenizerAdapter):
 class MistralTokenizerAdapter(TokenizerAdapter):
     def __init__(self):
         self.model_name = "open-mixtral-8x22b"
-        self.tokenizer = MistralTokenizer.from_model(self.model_name, strict=True)
+        self.tokenizer = MistralTokenizer.from_model(
+            self.model_name, strict=True
+        )
 
     def count_tokens(self, text):
         tokenized = self.tokenizer.encode_chat_completion(
