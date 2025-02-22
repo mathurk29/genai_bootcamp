@@ -11,3 +11,4 @@ day-5-langchain-and-transformers/client/retriever.ipynb
 day-5-langchain-and-transformers/prompts/03_LLM Application Development 2.ipynb
 day-5-langchain-and-transformers/prompts/react.ipynb
 *.env
+path
